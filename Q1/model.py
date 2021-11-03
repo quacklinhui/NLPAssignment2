@@ -123,15 +123,43 @@ class PositionalEncoding(nn.Module):
 
 
 class FNNModel(nn.Module):
-    # Initialise
-    def __init__(self, rnn_type, ntoken, ninp, nhid, nlayers, dropout=0.5, tie_weights=False):
+    """Container module with an encoder, a recurrent module, and a decoder."""
+
+    def __init__(self, ntoken, ninp, nhid, nlayers, dropout=0.5, tie_weights=False):
         super(FNNModel, self).__init__()
-        # Table look up in C
-        # One Hidden Tanh Layer
-        self.tanh = nn.Tanh()
-        # Final Softmax Layer (Probability over |V| words for the next word)
-        self.relu = nn.ReLU()
-    # Forward Pass
+        self.ntoken = ntoken
+        self.drop = nn.Dropout(dropout)
+        self.encoder = nn.Embedding(ntoken, ninp)
+
+        # Declare all the layers here
+        self.fc1 = torch.nn.Linear(ninp, nhid)
+        self.tanh = torch.nn.Tanh()
+        self.softmax = torch.nn.Softmax()
+        self.decoder = nn.Linear(nhid, ntoken)
+
+        if tie_weights:
+            if nhid != ninp:
+                raise ValueError(
+                    'When using the tied flag, nhid must be equal to emsize')
+            self.decoder.weight = self.encoder.weight
+
+        self.init_weights()
+        self.nhid = nhid
+        self.nlayers = nlayers
+
+    def init_weights(self):
+        initrange = 0.1
+        nn.init.uniform_(self.encoder.weight, -initrange, initrange)
+        nn.init.zeros_(self.decoder.weight)
+        nn.init.uniform_(self.decoder.weight, -initrange, initrange)
+
+    def forward(self, input):
+        emb = self.encoder(input)
+        x = self.fc1(emb)
+        output = self.tanh(x)
+        decoded = self.decoder(output)
+        decoded = decoded.view(-1, self.ntoken)
+        return F.log_softmax(decoded, dim=1)
 
 
 class TransformerModel(nn.Module):
