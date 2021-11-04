@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 # coding: utf-8
-
-# In[ ]:
-
-
 import os
 from io import open
 import torch

@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
-
 
 ###############################################################################
 # Language Modeling on Wikitext-2
