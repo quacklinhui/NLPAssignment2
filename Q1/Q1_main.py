@@ -12,22 +12,22 @@ import torch.onnx
 import data
 import model
 
+# getting args for model
 parser = argparse.ArgumentParser(description='PyTorch Wikitext-2 FNN Language Model')
 parser.add_argument('--data', type=str, default='./data/wikitext-2',
                     help='location of the data corpus')
 parser.add_argument('--emsize', type=int, default=200,
                     help='size of word embeddings')
+parser.add_argument('--context_size', type=int, default=8, help='size of ngram model')
 parser.add_argument('--nhid', type=int, default=200,
                     help='number of hidden units per layer')
 parser.add_argument('--nlayers', type=int, default=2,
                     help='number of layers')
 parser.add_argument('--lr', type=float, default=20,
                     help='initial learning rate')
-parser.add_argument('--clip', type=float, default=0.25,
-                    help='gradient clipping')
 parser.add_argument('--epochs', type=int, default=40,
                     help='upper epoch limit')
-parser.add_argument('--batch_size', type=int, default=20, metavar='N',
+parser.add_argument('--batch_size', type=int, default=8, metavar='N',
                     help='batch size')
 parser.add_argument('--bptt', type=int, default=35,
                     help='sequence length')
@@ -66,6 +66,7 @@ device = torch.device("cuda" if args.cuda else "cpu")
 ###############################################################################
 
 corpus = data.Corpus(args.data)
+print(corpus.train)
 
 # Starting from sequential data, batchify arranges the dataset into columns.
 # For instance, with the alphabet as the sequence and batch size 4, we'd get
@@ -92,26 +93,28 @@ eval_batch_size = 8
 train_data = batchify(corpus.train, args.batch_size)
 val_data = batchify(corpus.valid, eval_batch_size)
 test_data = batchify(corpus.test, eval_batch_size)
-
+print(train_data)
 ###############################################################################
 # Build the model
 ###############################################################################
 
 ntokens = len(corpus.dictionary)
-model = model.FNNModel(ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.tied).to(device)
+model = model.FNNModel(ntokens, args.emsize, args.nhid, args.nlayers, args.context_size, args.dropout, args.tied).to(device)
 
+# using negative log likelihood
 criterion = nn.NLLLoss()
 ###############################################################################
 # Training code
 ###############################################################################
 
-def repackage_hidden(h):
-    """Wraps hidden states in new Tensors, to detach them from their history."""
+# might not need
+# def repackage_hidden(h):
+#     """Wraps hidden states in new Tensors, to detach them from their history."""
 
-    if isinstance(h, torch.Tensor):
-        return h.detach()
-    else:
-        return tuple(repackage_hidden(v) for v in h)
+#     if isinstance(h, torch.Tensor):
+#         return h.detach()
+#     else:
+#         return tuple(repackage_hidden(v) for v in h)
 
 
 # get_batch subdivides the source data into chunks of length args.bptt.
@@ -136,7 +139,7 @@ def evaluate(data_source):
     model.eval()
     total_loss = 0.
     ntokens = len(corpus.dictionary)
-    hidden = model.init_hidden(eval_batch_size)
+    #hidden = model.init_hidden(eval_batch_size)
     with torch.no_grad():
         for i in range(0, data_source.size(0) - 1, args.bptt):
             data, targets = get_batch(data_source, i)
@@ -153,7 +156,6 @@ def train():
     start_time = time.time()
     ntokens = len(corpus.dictionary)
     #hidden = model.init_hidden(args.batch_size)
-    #print(hidden)
     for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
         data, targets = get_batch(train_data, i)
         # Starting each batch, we detach the hidden state from how it was previously produced.

@@ -9,17 +9,19 @@ import torch.nn.functional as F
 class FNNModel(nn.Module):
     """Container module with an encoder, a feedforward module, and a decoder."""
 
-    def __init__(self, ntoken, input_size, nhid, nlayers, dropout=0.5, tie_weights=False):
+    def __init__(self, vocab_size, input_dim, hidden_dim, context_size, nlayers, dropout=0.5, tie_weights=False):
         super(FNNModel, self).__init__() # Inherited from the parent class nn.Module
-        self.ntoken = ntoken # number of tokens in the corpus dictionary
+        self.vocab_size = vocab_size # number of tokens in the corpus dictionary
         self.drop = nn.Dropout(dropout) # during training, randomly zeroes some of the elements of the input with probability dropout 
-        self.encoder = nn.Embedding(ntoken, input_size) # used to store word embeddings and retrieve them using indices
+        self.context_size = context_size
+        
+        # vocab_size - vocab, input_dim - dimensionality of the embeddings
+        self.encoder = nn.Embedding(vocab_size, input_dim) # used to store word embeddings and retrieve them using indices
         
         # Declaring the layers
-        self.input = nn.Linear(input_size, nhid) # apply a linear transformation on input
-        self.hidden = nn.Tanh() # Second layer - tahn activation layer
-        #self.softmax = nn.Softmax() # Last layer - softmax layer
-        self.decoder = nn.Linear(nhid, ntoken)
+        self.input = nn.Linear(context_size * input_dim, hidden_dim) # linear layer (input)
+        self.hidden = nn.Tanh() # Second layer - tahn activation layer (non-linearity layer)
+        self.decoder = nn.Linear(hidden_dim, vocab_size) # decoder - linearity layer
         
         if tie_weights:
             if nhid != input_size:
@@ -41,13 +43,13 @@ class FNNModel(nn.Module):
         emb = self.drop(self.encoder(input)) 
         x = self.input(emb) 
         output = self.hidden(x) # applying tanh
-        # softmax = self.softmax(output) # applying softmax
         decoded = self.decoder(output)
-        decoded = decoded.view(-1, self.ntoken)
-        return F.log_softmax(decoded, dim=1) # applies log after softmax - output
+        decoded = decoded.view(-1, self.vocab_size)
+        log_probs = F.log_softmax(decoded, dim=1) # applies log after softmax - output
+        return log_probs 
     
-    def init_hidden(self, bsz):
-        weight = next(self.parameters())
+#     def init_hidden(self, bsz):
+#         weight = next(self.parameters())
     
 # Positional Encoding
 class PositionalEncoding(nn.Module):
