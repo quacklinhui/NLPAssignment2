@@ -12,7 +12,6 @@ class FNNModel(nn.Module):
     def __init__(self, vocab_size, input_dim, hidden_dim, context_size, tie_weights=False):
         super(FNNModel, self).__init__() # Inherited from the parent class nn.Module
         self.vocab_size = vocab_size # number of tokens in the corpus dictionary
-#         self.drop = nn.Dropout(dropout) # during training, randomly zeroes some of the elements of the input with probability dropout 
         self.context_size = context_size
         self.input_dim = input_dim
         

@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import torch.onnx
 import torch.optim as optim
+
 import data
 import model
 
@@ -23,7 +24,7 @@ parser.add_argument('--nhid', type=int, default=200,
                     help='number of hidden units per layer')
 parser.add_argument('--nlayers', type=int, default=2,
                     help='number of layers')
-parser.add_argument('--lr', type=float, default=20,
+parser.add_argument('--lr', type=float, default=1e-3,
                     help='initial learning rate')
 parser.add_argument('--epochs', type=int, default=40,
                     help='upper epoch limit')
@@ -39,7 +40,7 @@ parser.add_argument('--seed', type=int, default=1111,
                     help='random seed')
 parser.add_argument('--cuda', action='store_true',
                     help='use CUDA')
-parser.add_argument('--log-interval', type=int, default=10000, metavar='N',
+parser.add_argument('--log-interval', type=int, default=200, metavar='N',
                     help='report interval')
 parser.add_argument('--save', type=str, default='model.pt',
                     help='path to save the final model')
@@ -87,25 +88,9 @@ def batchify(data, bsz):
     # Evenly divide the data across the bsz batches.
     data = data.view(bsz, -1).t().contiguous()
     return data.to(device)
-# def batchify(data, bsz):
-#     value=[]
-#     data = data.numpy()
-#     for i,word in enumerate(data):
-#         if i+bsz>= len(data):
-#             # sentence boundary reached
-#             # ignoring sentence less than 3 words
-#             break
-#         # convert word to id
-#         value1 = []
-#         for j in range(bsz+1):
-#             value1.append(data[i+j])
-#         value.append(value1)
-#     value = torch.LongTensor(value)
-#     return value.to(device)
 
 eval_batch_size = 8
 train_data = batchify(corpus.train, args.context_size)
-
 val_data = batchify(corpus.valid, eval_batch_size)
 test_data = batchify(corpus.test, eval_batch_size)
 
@@ -118,19 +103,10 @@ model = model.FNNModel(ntokens, args.emsize, args.nhid, args.context_size, args.
 
 # using negative log likelihood
 criterion = nn.NLLLoss()
+
 ###############################################################################
 # Training code
 ###############################################################################
-
-# might not need
-# def repackage_hidden(h):
-#     """Wraps hidden states in new Tensors, to detach them from their history."""
-
-#     if isinstance(h, torch.Tensor):
-#         return h.detach()
-#     else:
-#         return tuple(repackage_hidden(v) for v in h)
-
 
 # get_batch subdivides the source data into chunks of length args.bptt.
 # If source is equal to the example output of the batchify function, with
@@ -139,66 +115,51 @@ criterion = nn.NLLLoss()
 # └ b h n t ┘ └ c i o u ┘
 # Note that despite the name of the function, the subdivison of data is not
 # done along the batch dimension (i.e. dimension 1), since that was handled
-# by the batchify function. The chunks are along dimension 0, corresponding
-# to the seq_len dimension in the LSTM.
+# by the batchify function. 
 
 def get_batch(source, i):
     seq_len = min(args.bptt, len(source) - 1 - i)
     data = source[i:i+seq_len, 0:args.context_size]
     target = source[i+1:i+1+seq_len, args.context_size-1:args.context_size]
     target = target.narrow(1,0,1).contiguous().view(-1)
-#     print(data)
     return data, target
-
 
 def evaluate(data_source):
     # Turn on evaluation mode which disables dropout.
     model.eval()
-    total_loss = 0
+    total_loss = 0.
     ntokens = len(corpus.dictionary)
-    #hidden = model.init_hidden(eval_batch_size)
     with torch.no_grad():
         for i in range(0, data_source.size(0) - 1, args.bptt):
             data, targets = get_batch(data_source, i)
             output = model(data)
-            #hidden = repackage_hidden(hidden)
             total_loss += len(data) * criterion(output, targets).item()
     return total_loss / (len(data_source) - 1)
 
 
 def train():
-    # using ADAM optimizer
-    optimizer = optim.Adam(model.parameters(), lr = 2e-3)
     # Turn on training mode which enables dropout.
     model.train()
-    total_loss = 0.
+    # using ADAM optimizer
+    optimizer = optim.RMSprop(model.parameters(), lr = args.lr)
+    total_loss = 0
     start_time = time.time()
     ntokens = len(corpus.dictionary)
-    #hidden = model.init_hidden(args.batch_size)
-    print(train_data.size(0))
     for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
         data, targets = get_batch(train_data, i)
-        # Starting each batch, we detach the hidden state from how it was previously produced.
-        # If we didn't, the model would try backpropagating all the way to start of the dataset.
         data, targets = data.to(device), targets.to(device)
-        model.zero_grad()
-        #hidden = repackage_hidden(hidden)
+        model.zero_grad() # zero out the gradients from the old instance
         output = model(data)
-#         print(len(output))
         loss = criterion(output, targets)
         loss.backward()
         optimizer.step()
-        # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
-#         torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
-#         for p in model.parameters():
-#             p.data.add_(p.grad, alpha=-lr)
 
         total_loss += loss.item()
 
         if batch % args.log_interval == 0 and batch > 0:
             cur_loss = total_loss / args.log_interval
             elapsed = time.time() - start_time
-            print('| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.2f} | ms/batch {:5.2f} | '
+            print('| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.4f} | ms/batch {:5.2f} | '
                     'loss {:5.2f} | ppl {:8.2f}'.format(
                 epoch, batch, len(train_data) // args.bptt, lr,
                 elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
@@ -216,10 +177,15 @@ def export_onnx(path, batch_size, seq_len):
     hidden = model.init_hidden(batch_size)
     torch.onnx.export(model, (dummy_input, hidden), path)
 
+###############################################################################
+# Main code
+###############################################################################
+
 
 # Loop over epochs.
 lr = args.lr
 best_val_loss = None
+best_perplexity = 999999999999999
 
 # At any point you can hit Ctrl + C to break out of training early.
 try:
@@ -232,14 +198,26 @@ try:
             'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
                                            val_loss, math.exp(val_loss)))
         print('-' * 89)
-        # Save the model if the validation loss is the best we've seen so far.
-        if not best_val_loss or val_loss < best_val_loss:
+        
+        # Save the model if the perplexity is the best seen
+        perplexity = math.exp(val_loss)
+        if perplexity < best_perplexity:
             with open(args.save, 'wb') as f:
                 torch.save(model, f)
-            best_val_loss = val_loss
+                
+            best_perplexity = perplexity
         else:
             # Anneal the learning rate if no improvement has been seen in the validation dataset.
             lr /= 4.0
+            
+#         # Save the model if the validation loss is the best we've seen so far.
+#         if not best_val_loss or val_loss < best_val_loss:
+#             with open(args.save, 'wb') as f:
+#                 torch.save(model, f)
+#             best_val_loss = val_loss
+#         else:
+#             # Anneal the learning rate if no improvement has been seen in the validation dataset.
+#             lr /= 4.0
             
 except KeyboardInterrupt:
     print('-' * 89)
