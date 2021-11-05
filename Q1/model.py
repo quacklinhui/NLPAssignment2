@@ -9,11 +9,12 @@ import torch.nn.functional as F
 class FNNModel(nn.Module):
     """Container module with an encoder, a feedforward module, and a decoder."""
 
-    def __init__(self, vocab_size, input_dim, hidden_dim, context_size, tie_weights=False):
+    def __init__(self, vocab_size, input_dim, hidden_dim, context_size, dropout, tie_weights=False):
         super(FNNModel, self).__init__() # Inherited from the parent class nn.Module
         self.vocab_size = vocab_size # number of tokens in the corpus dictionary
         self.context_size = context_size
         self.input_dim = input_dim
+        self.drop = dropout
         
         # vocab_size - vocab, input_dim - dimensionality of the embeddings
         self.encoder = nn.Embedding(vocab_size, input_dim) # used to store word embeddings and retrieve them using indices
