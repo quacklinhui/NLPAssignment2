@@ -202,6 +202,7 @@ try:
         # Save the model if the perplexity is the best seen
         perplexity = math.exp(val_loss)
         if perplexity < best_perplexity:
+            print(perplexity)
             with open(args.save, 'wb') as f:
                 torch.save(model, f)
                 
