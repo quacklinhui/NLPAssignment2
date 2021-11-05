@@ -8,7 +8,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.onnx
-
+import torch.optim as optim
 import data
 import model
 
@@ -39,7 +39,7 @@ parser.add_argument('--seed', type=int, default=1111,
                     help='random seed')
 parser.add_argument('--cuda', action='store_true',
                     help='use CUDA')
-parser.add_argument('--log-interval', type=int, default=200, metavar='N',
+parser.add_argument('--log-interval', type=int, default=10000, metavar='N',
                     help='report interval')
 parser.add_argument('--save', type=str, default='model.pt',
                     help='path to save the final model')
@@ -66,7 +66,6 @@ device = torch.device("cuda" if args.cuda else "cpu")
 ###############################################################################
 
 corpus = data.Corpus(args.data)
-print(corpus.train)
 
 # Starting from sequential data, batchify arranges the dataset into columns.
 # For instance, with the alphabet as the sequence and batch size 4, we'd get
@@ -88,18 +87,34 @@ def batchify(data, bsz):
     # Evenly divide the data across the bsz batches.
     data = data.view(bsz, -1).t().contiguous()
     return data.to(device)
+# def batchify(data, bsz):
+#     value=[]
+#     data = data.numpy()
+#     for i,word in enumerate(data):
+#         if i+bsz>= len(data):
+#             # sentence boundary reached
+#             # ignoring sentence less than 3 words
+#             break
+#         # convert word to id
+#         value1 = []
+#         for j in range(bsz+1):
+#             value1.append(data[i+j])
+#         value.append(value1)
+#     value = torch.LongTensor(value)
+#     return value.to(device)
 
 eval_batch_size = 8
-train_data = batchify(corpus.train, args.batch_size)
+train_data = batchify(corpus.train, args.context_size)
+
 val_data = batchify(corpus.valid, eval_batch_size)
 test_data = batchify(corpus.test, eval_batch_size)
-print(train_data)
+
 ###############################################################################
 # Build the model
 ###############################################################################
 
 ntokens = len(corpus.dictionary)
-model = model.FNNModel(ntokens, args.emsize, args.nhid, args.nlayers, args.context_size, args.dropout, args.tied).to(device)
+model = model.FNNModel(ntokens, args.emsize, args.nhid, args.context_size, args.tied).to(device)
 
 # using negative log likelihood
 criterion = nn.NLLLoss()
@@ -129,15 +144,17 @@ criterion = nn.NLLLoss()
 
 def get_batch(source, i):
     seq_len = min(args.bptt, len(source) - 1 - i)
-    data = source[i:i+seq_len]
-    target = source[i+1:i+1+seq_len].view(-1)
+    data = source[i:i+seq_len, 0:args.context_size]
+    target = source[i+1:i+1+seq_len, args.context_size-1:args.context_size]
+    target = target.narrow(1,0,1).contiguous().view(-1)
+#     print(data)
     return data, target
 
 
 def evaluate(data_source):
     # Turn on evaluation mode which disables dropout.
     model.eval()
-    total_loss = 0.
+    total_loss = 0
     ntokens = len(corpus.dictionary)
     #hidden = model.init_hidden(eval_batch_size)
     with torch.no_grad():
@@ -150,22 +167,27 @@ def evaluate(data_source):
 
 
 def train():
+    # using ADAM optimizer
+    optimizer = optim.Adam(model.parameters(), lr = 2e-3)
     # Turn on training mode which enables dropout.
     model.train()
     total_loss = 0.
     start_time = time.time()
     ntokens = len(corpus.dictionary)
     #hidden = model.init_hidden(args.batch_size)
+    print(train_data.size(0))
     for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
         data, targets = get_batch(train_data, i)
         # Starting each batch, we detach the hidden state from how it was previously produced.
         # If we didn't, the model would try backpropagating all the way to start of the dataset.
+        data, targets = data.to(device), targets.to(device)
         model.zero_grad()
         #hidden = repackage_hidden(hidden)
         output = model(data)
+#         print(len(output))
         loss = criterion(output, targets)
         loss.backward()
-
+        optimizer.step()
         # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
 #         torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
 #         for p in model.parameters():

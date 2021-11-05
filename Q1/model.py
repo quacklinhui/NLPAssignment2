@@ -9,11 +9,12 @@ import torch.nn.functional as F
 class FNNModel(nn.Module):
     """Container module with an encoder, a feedforward module, and a decoder."""
 
-    def __init__(self, vocab_size, input_dim, hidden_dim, context_size, nlayers, dropout=0.5, tie_weights=False):
+    def __init__(self, vocab_size, input_dim, hidden_dim, context_size, tie_weights=False):
         super(FNNModel, self).__init__() # Inherited from the parent class nn.Module
         self.vocab_size = vocab_size # number of tokens in the corpus dictionary
-        self.drop = nn.Dropout(dropout) # during training, randomly zeroes some of the elements of the input with probability dropout 
+#         self.drop = nn.Dropout(dropout) # during training, randomly zeroes some of the elements of the input with probability dropout 
         self.context_size = context_size
+        self.input_dim = input_dim
         
         # vocab_size - vocab, input_dim - dimensionality of the embeddings
         self.encoder = nn.Embedding(vocab_size, input_dim) # used to store word embeddings and retrieve them using indices
@@ -21,17 +22,17 @@ class FNNModel(nn.Module):
         # Declaring the layers
         self.input = nn.Linear(context_size * input_dim, hidden_dim) # linear layer (input)
         self.hidden = nn.Tanh() # Second layer - tahn activation layer (non-linearity layer)
-        self.decoder = nn.Linear(hidden_dim, vocab_size) # decoder - linearity layer
+        self.decoder = nn.Linear(hidden_dim, vocab_size, bias = False ) # decoder - linearity layer\
         
         if tie_weights:
-            if nhid != input_size:
+            if hidden_dim != input_size:
                 raise ValueError(
                     'When using the tied flag, nhid must be equal to emsize')
             self.decoder.weight = self.encoder.weight
 
         self.init_weights()
-        self.nhid = nhid
-        self.nlayers = nlayers
+        self.nhid = hidden_dim
+       
 
     def init_weights(self):
         initrange = 0.1
@@ -40,13 +41,14 @@ class FNNModel(nn.Module):
         nn.init.uniform_(self.decoder.weight, -initrange, initrange)
 
     def forward(self, input): # Forward pass: stacking each layer together 
-        emb = self.drop(self.encoder(input)) 
+        emb = self.encoder(input).view((-1,self.context_size*self.input_dim))
         x = self.input(emb) 
         output = self.hidden(x) # applying tanh
         decoded = self.decoder(output)
         decoded = decoded.view(-1, self.vocab_size)
         log_probs = F.log_softmax(decoded, dim=1) # applies log after softmax - output
         return log_probs 
+
     
 #     def init_hidden(self, bsz):
 #         weight = next(self.parameters())
