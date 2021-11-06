@@ -54,7 +54,7 @@ model.eval()
 corpus = data.Corpus(args.data)
 ntokens = len(corpus.dictionary)
 
-input = torch.randint(ntokens, (1, 1), dtype=torch.long).to(device)
+input = torch.randint(ntokens, (1, 8), dtype=torch.long).to(device)
 
 with open(args.outf, 'w', encoding='utf-8') as outf:
     with torch.no_grad():  # no tracking history

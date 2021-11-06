@@ -183,6 +183,14 @@ def train():
             start_time = time.time()
         if args.dry_run:
             break
+            
+
+def export_onnx(path, batch_size, seq_len):
+    print('The model is also exported in ONNX format at {}'.
+          format(os.path.realpath(args.onnx_export)))
+    model.eval()
+    dummy_input = torch.LongTensor(seq_len * batch_size).zero_().view(-1, batch_size).to(device)
+    torch.onnx.export(model, dummy_input, path)
 
 ###############################################################################
 # Main code --> (iii) - (v)
@@ -236,6 +244,11 @@ print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
         test_loss, math.exp(test_loss)))
 print('=' * 89)
 
+# saving to onnx format
+if len(args.onnx_export) > 0:
+    # Export the model in ONNX format.
+    export_onnx(args.onnx_export, batch_size=1, seq_len=args.bptt)
+
 ###############################################################################
 # Main code --> (iii) - (v)
 ###############################################################################
@@ -250,56 +263,10 @@ print('-'*89)
 ###########################################################################
 
 ntokens = len(corpus.dictionary)
-model_vi = model.FNNModel(ntokens, args.emsize, args.emsize, args.context_size, args.tied).to(device)
+model = model.FNNModel(ntokens, args.emsize, args.emsize, args.context_size, args.tied).to(device)
 
 # using negative log likelihood
 criterion = nn.NLLLoss()
-
- # Training the model
-def train_vi():
-    # Turn on training mode which enables dropout.
-    model_vi.train()
-    # using ADAM optimizer
-    optimizer = optim.Adam(model_vi.parameters(), lr = args.lr)
-    total_loss = 0
-    start_time = time.time()
-    ntokens = len(corpus.dictionary)
-    for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
-        data, targets = get_batch(train_data, i)
-        data, targets = data.to(device), targets.to(device)
-        model_vi.zero_grad() # zero out the gradients from the old instance
-        output = model_vi(data)
-        loss = criterion(output, targets)
-        loss.backward()
-        optimizer.step()
-
-        total_loss += loss.item()
-
-        if batch % args.log_interval == 0 and batch > 0:
-            cur_loss = total_loss / args.log_interval
-            elapsed = time.time() - start_time
-            print('| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.4f} | ms/batch {:5.2f} | '
-                    'loss {:5.2f} | ppl {:8.2f}'.format(
-                epoch, batch, len(train_data) // args.bptt, lr,
-                elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
-            total_loss = 0
-            start_time = time.time()
-        if args.dry_run:
-            break
-
-def evaluate_vi(data_source):
-    # Turn on evaluation mode which disables dropout.
-    model_vi.eval()
-    total_loss = 0.
-    #ntokens = len(corpus.dictionary)
-    with torch.no_grad():
-        for i in range(0, data_source.size(0) - 1, args.bptt):
-            data, targets = get_batch(data_source, i)
-            data, targets = data.to(device), targets.to(device)
-            output = model_vi(data)
-            total_loss += len(data) * criterion(output, targets).item()
-    return total_loss / (len(data_source) -1)
-
 
 # Loop over epochs.
 lr = args.lr
@@ -310,8 +277,8 @@ best_perplexity = 999999999999999
 try:
     for epoch in range(1, args.epochs+1):
         epoch_start_time = time.time()
-        train_vi()
-        val_loss = evaluate_vi(val_data)
+        train()
+        val_loss = evaluate(val_data)
         print('-' * 89)
         print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
             'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
@@ -321,9 +288,8 @@ try:
         # Save the model if the perplexity is the best seen
         perplexity = math.exp(val_loss)
         if perplexity < best_perplexity:
-            print(perplexity)
-            with open('model_vi.pt', 'wb') as f:
-                torch.save(model_vi, f)
+            with open(args.save, 'wb') as f:
+                torch.save(model, f)
                 
             best_perplexity = perplexity
         else:
@@ -335,12 +301,17 @@ except KeyboardInterrupt:
     print('Exiting from training early')
 
 # Load the best saved model.
-with open('model_vi.pt', 'rb') as f:
-    model_vi = torch.load(f)
+with open(args.save, 'rb') as f:
+    model = torch.load(f)
 
 # Run on test data.
-test_loss = evaluate_vi(test_data)
+test_loss = evaluate(test_data)
 print('=' * 89)
 print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
         test_loss, math.exp(test_loss)))
 print('=' * 89)
+
+# saving to onnx format
+if len(args.onnx_export) > 0:
+    # Export the model in ONNX format.
+    export_onnx(args.onnx_export, batch_size=1, seq_len=args.bptt)
