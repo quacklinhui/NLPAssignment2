@@ -9,12 +9,11 @@ import torch.nn.functional as F
 class FNNModel(nn.Module):
     """Container module with an encoder, a feedforward module, and a decoder."""
 
-    def __init__(self, vocab_size, input_dim, hidden_dim, context_size, dropout, tie_weights=False):
+    def __init__(self, vocab_size, input_dim, hidden_dim, context_size, tie_weights=False):
         super(FNNModel, self).__init__() # Inherited from the parent class nn.Module
         self.vocab_size = vocab_size # number of tokens in the corpus dictionary
         self.context_size = context_size
         self.input_dim = input_dim
-        self.drop = dropout
         
         # vocab_size - vocab, input_dim - dimensionality of the embeddings
         self.encoder = nn.Embedding(vocab_size, input_dim) # used to store word embeddings and retrieve them using indices
@@ -22,10 +21,10 @@ class FNNModel(nn.Module):
         # Declaring the layers
         self.input = nn.Linear(context_size * input_dim, hidden_dim) # linear layer (input)
         self.hidden = nn.Tanh() # Second layer - tahn activation layer (non-linearity layer)
-        self.decoder = nn.Linear(hidden_dim, vocab_size, bias = False ) # decoder - linearity layer\
+        self.decoder = nn.Linear(hidden_dim, vocab_size, bias = False ) # decoder - linearity layer
         
         if tie_weights:
-            if hidden_dim != input_size:
+            if hidden_dim != input_dim:
                 raise ValueError(
                     'When using the tied flag, nhid must be equal to emsize')
             self.decoder.weight = self.encoder.weight
@@ -48,10 +47,6 @@ class FNNModel(nn.Module):
         decoded = decoded.view(-1, self.vocab_size)
         log_probs = F.log_softmax(decoded, dim=1) # applies log after softmax - output
         return log_probs 
-
-    
-#     def init_hidden(self, bsz):
-#         weight = next(self.parameters())
     
 # Positional Encoding
 class PositionalEncoding(nn.Module):
