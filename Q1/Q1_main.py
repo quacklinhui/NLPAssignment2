@@ -34,7 +34,7 @@ parser.add_argument('--bptt', type=int, default=35,
                     help='sequence length')
 parser.add_argument('--dropout', type=float, default=0.2,
                     help='dropout applied to layers (0 = no dropout)')
-parser.add_argument('--tied', action='store_true',
+parser.add_argument('--tied', action='store_false',
                     help='tie the word embedding and softmax weights')
 parser.add_argument('--seed', type=int, default=1111,
                     help='random seed')
@@ -115,7 +115,7 @@ test_data = batchify(corpus.test, eval_batch_size)
 ###############################################################################
 
 ntokens = len(corpus.dictionary)
-model = model.FNNModel(ntokens, args.emsize, args.nhid, args.context_size, args.tied).to(device)
+model = model.FNNModel(ntokens, args.emsize, args.nhid, args.context_size, False).to(device)
 
 # using negative log likelihood
 criterion = nn.NLLLoss()
@@ -250,10 +250,12 @@ if len(args.onnx_export) > 0:
     export_onnx(args.onnx_export, batch_size=1, seq_len=args.bptt)
 
 ###############################################################################
-# Main code --> (iii) - (v)
+# Main code --> (vi) - (vii)
 ###############################################################################
 import model
 
+print()
+print()
 print('-'*89)
 print('--- Part vi ---')
 print('-'*89)
@@ -263,7 +265,7 @@ print('-'*89)
 ###########################################################################
 
 ntokens = len(corpus.dictionary)
-model = model.FNNModel(ntokens, args.emsize, args.emsize, args.context_size, args.tied).to(device)
+model = model.FNNModel(ntokens, args.emsize, args.emsize, args.context_size, True).to(device)
 
 # using negative log likelihood
 criterion = nn.NLLLoss()
