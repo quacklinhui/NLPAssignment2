@@ -250,7 +250,7 @@ print('-'*89)
 ###########################################################################
 
 ntokens = len(corpus.dictionary)
-model_vi = model.FNNModel(ntokens, args.emsize, args.emsize, args.context_size, args.dropout, args.tied).to(device)
+model_vi = model.FNNModel(ntokens, args.emsize, args.emsize, args.context_size, args.tied).to(device)
 
 # using negative log likelihood
 criterion = nn.NLLLoss()
