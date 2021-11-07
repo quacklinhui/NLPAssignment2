@@ -9,22 +9,21 @@ import torch.nn.functional as F
 class FNNModel(nn.Module):
     """Container module with an encoder, a feedforward module, and a decoder."""
 
-    def __init__(self, vocab_size, input_dim, hidden_dim, context_size, tie_weights):
+    def __init__(self, vocab_size, input_dim, hidden_dim, ngram_size, tie_weights):
         super(FNNModel, self).__init__() # Inherited from the parent class nn.Module
         self.vocab_size = vocab_size # number of tokens in the corpus dictionary
-        self.context_size = context_size
+        self.ngram_size = ngram_size
         self.input_dim = input_dim
         
         # vocab_size - vocab, input_dim - dimensionality of the embeddings
         self.encoder = nn.Embedding(vocab_size, input_dim) # used to store word embeddings and retrieve them using indices
         
         # Declaring the layers
-        self.input = nn.Linear(context_size * input_dim, hidden_dim) # linear layer (input)
+        self.input = nn.Linear(ngram_size * input_dim, hidden_dim) # linear layer (input)
         self.hidden = nn.Tanh() # Second layer - tahn activation layer (non-linearity layer)
         self.decoder = nn.Linear(hidden_dim, vocab_size, bias = False ) # decoder - linearity layer
         
         if tie_weights:
-            print('hello')
             if hidden_dim != input_dim:
                 raise ValueError('When using the tied flag, nhid must be equal to emsize')
             self.decoder.weight = self.encoder.weight
@@ -40,7 +39,7 @@ class FNNModel(nn.Module):
         nn.init.uniform_(self.decoder.weight, -initrange, initrange)
 
     def forward(self, input): # Forward pass: stacking each layer together 
-        emb = self.encoder(input).view((-1,self.context_size*self.input_dim))
+        emb = self.encoder(input).view((-1,self.ngram_size*self.input_dim))
         x = self.input(emb) 
         output = self.hidden(x) # applying tanh
         decoded = self.decoder(output)

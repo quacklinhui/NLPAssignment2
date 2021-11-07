@@ -19,7 +19,7 @@ parser.add_argument('--data', type=str, default='./data/wikitext-2',
                     help='location of the data corpus')
 parser.add_argument('--emsize', type=int, default=200,
                     help='size of word embeddings')
-parser.add_argument('--context_size', type=int, default=8, help='size of ngram model')
+parser.add_argument('--ngram_size', type=int, default=7, help='size of ngram model')
 parser.add_argument('--nhid', type=int, default=200,
                     help='number of hidden units per layer')
 parser.add_argument('--nlayers', type=int, default=2,
@@ -28,9 +28,7 @@ parser.add_argument('--lr', type=float, default=1e-3,
                     help='initial learning rate')
 parser.add_argument('--epochs', type=int, default=40,
                     help='upper epoch limit')
-parser.add_argument('--batch_size', type=int, default=8, metavar='N',
-                    help='batch size')
-parser.add_argument('--bptt', type=int, default=35,
+parser.add_argument('--batch_size', type=int, default=35,
                     help='sequence length')
 parser.add_argument('--dropout', type=float, default=0.2,
                     help='dropout applied to layers (0 = no dropout)')
@@ -89,7 +87,7 @@ corpus = data.Corpus(args.data)
 #     data = data.view(bsz, -1).t().contiguous()
 #     return data.to(device)
 
-def batchify(data, bsz):
+def split_ngram(data, bsz):
     value=[]
     data = data.numpy()
     for i,word in enumerate(data):
@@ -105,17 +103,17 @@ def batchify(data, bsz):
     value = torch.LongTensor(value)
     return value.to(device)
 
-eval_batch_size = 8
-train_data = batchify(corpus.train, args.batch_size)
-val_data = batchify(corpus.valid, eval_batch_size)
-test_data = batchify(corpus.test, eval_batch_size)
+eval_ngram_size = 7
+train_data = split_ngram(corpus.train, args.ngram_size)
+val_data = split_ngram(corpus.valid, eval_ngram_size)
+test_data = split_ngram(corpus.test, eval_ngram_size)
 
 ###############################################################################
 # Build the model (ii)
 ###############################################################################
 
 ntokens = len(corpus.dictionary)
-model = model.FNNModel(ntokens, args.emsize, args.nhid, args.context_size, False).to(device)
+model = model.FNNModel(ntokens, args.emsize, args.nhid, args.ngram_size, False).to(device)
 
 # using negative log likelihood
 criterion = nn.NLLLoss()
@@ -124,9 +122,9 @@ criterion = nn.NLLLoss()
 # Training code
 ###############################################################################
 
-# get_batch subdivides the source data into chunks of length args.bptt.
+# get_batch subdivides the source data into chunks of length args.batch_size.
 # If source is equal to the example output of the batchify function, with
-# a bptt-limit of 2, we'd get the following two Variables for i = 0:
+# a batch size-limit of 2, we'd get the following two Variables for i = 0:
 # ┌ a g m s ┐ ┌ b h n t ┐
 # └ b h n t ┘ └ c i o u ┘
 # Note that despite the name of the function, the subdivison of data is not
@@ -134,9 +132,9 @@ criterion = nn.NLLLoss()
 # by the batchify function. 
 
 def get_batch(source, i):
-    seq_len = min(args.bptt, len(source) - 1 - i)
-    data = source[i:i+seq_len, 0:args.context_size]
-    target = source[i+1:i+1+seq_len, args.context_size-1:args.context_size]
+    seq_len = min(args.batch_size, len(source) - 1 - i)
+    data = source[i:i+seq_len, 0:args.ngram_size]
+    target = source[i+1:i+1+seq_len, args.ngram_size-1:args.ngram_size]
     target = target.narrow(1,0,1).contiguous().view(-1)
     return data, target
 
@@ -145,7 +143,7 @@ def evaluate(data_source):
     model.eval()
     total_loss = 0.
     with torch.no_grad():
-        for i in range(0, data_source.size(0) - 1, args.bptt):
+        for i in range(0, data_source.size(0) - 1, args.batch_size):
             data, targets = get_batch(data_source, i)
             data, targets = data.to(device), targets.to(device)
             output = model(data)
@@ -156,18 +154,21 @@ def evaluate(data_source):
 def train():
     # Turn on training mode which enables dropout.
     model.train()
+    
     # using ADAM optimizer
     optimizer = optim.Adam(model.parameters(), lr = args.lr)
+    
     total_loss = 0
     start_time = time.time()
     ntokens = len(corpus.dictionary)
-    for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
+    for batch, i in enumerate(range(0, train_data.size(0) - 1, args.batch_size)):
         data, targets = get_batch(train_data, i)
         data, targets = data.to(device), targets.to(device)
         model.zero_grad() # zero out the gradients from the old instance
         output = model(data)
         loss = criterion(output, targets)
         loss.backward()
+        
         optimizer.step()
 
         total_loss += loss.item()
@@ -177,7 +178,7 @@ def train():
             elapsed = time.time() - start_time
             print('| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.4f} | ms/batch {:5.2f} | '
                     'loss {:5.2f} | ppl {:8.2f}'.format(
-                epoch, batch, len(train_data) // args.bptt, lr,
+                epoch, batch, len(train_data) // args.batch_size, lr,
                 elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
             total_loss = 0
             start_time = time.time()
@@ -247,7 +248,7 @@ print('=' * 89)
 # saving to onnx format
 if len(args.onnx_export) > 0:
     # Export the model in ONNX format.
-    export_onnx(args.onnx_export, batch_size=1, seq_len=args.bptt)
+    export_onnx(args.onnx_export, batch_size=1, seq_len=args.batch_size)
 
 ###############################################################################
 # Main code --> (vi) - (vii)
@@ -265,7 +266,7 @@ print('-'*89)
 ###########################################################################
 
 ntokens = len(corpus.dictionary)
-model = model.FNNModel(ntokens, args.emsize, args.emsize, args.context_size, True).to(device)
+model = model.FNNModel(ntokens, args.emsize, args.emsize, args.ngram_size, True).to(device)
 
 # using negative log likelihood
 criterion = nn.NLLLoss()
@@ -291,8 +292,7 @@ try:
         perplexity = math.exp(val_loss)
         if perplexity < best_perplexity:
             with open(args.save, 'wb') as f:
-                torch.save(model, f)
-                
+                torch.save(model, f)         
             best_perplexity = perplexity
         else:
             # Anneal the learning rate if no improvement has been seen in the validation dataset.
@@ -316,4 +316,4 @@ print('=' * 89)
 # saving to onnx format
 if len(args.onnx_export) > 0:
     # Export the model in ONNX format.
-    export_onnx(args.onnx_export, batch_size=1, seq_len=args.bptt)
+    export_onnx(args.onnx_export, batch_size=1, seq_len=args.batch_size)
