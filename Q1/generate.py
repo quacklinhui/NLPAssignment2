@@ -36,7 +36,7 @@ parser.add_argument('--log-interval', type=int, default=100,
                     help='reporting interval')
 args = parser.parse_args()
 
-
+# used to append new word and remove the first word, creating a new set of 7 words
 def modify_input(input, new_word):
     length = len(input[0])
     result = torch.cat([input.squeeze()[1:], new_word.view(-1)])
@@ -66,7 +66,6 @@ input = torch.randint(ntokens, (1, 7), dtype=torch.long).to(device)
 with open(args.outf, 'w', encoding='utf-8') as outf:
     with torch.no_grad():  # no tracking history
         for i in range(args.words):
-            print(input)
             output = model(input)
             word_weights = output.squeeze().div(args.temperature).exp().cpu()
             word_idx = torch.multinomial(word_weights, 1)[0]

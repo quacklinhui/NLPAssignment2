@@ -78,15 +78,6 @@ corpus = data.Corpus(args.data)
 # dependence of e. g. 'g' on 'f' can not be learned, but allows more efficient
 # batch processing.
 
-# def batchify(data, bsz):
-#     # Work out how cleanly we can divide the dataset into bsz parts.
-#     nbatch = data.size(0) // bsz
-#     # Trim off any extra elements that wouldn't cleanly fit (remainders).
-#     data = data.narrow(0, 0, nbatch * bsz)
-#     # Evenly divide the data across the bsz batches.
-#     data = data.view(bsz, -1).t().contiguous()
-#     return data.to(device)
-
 def split_ngram(data, bsz):
     value=[]
     data = data.numpy()
@@ -133,8 +124,8 @@ criterion = nn.NLLLoss()
 
 def get_batch(source, i):
     seq_len = min(args.batch_size, len(source) - 1 - i)
-    data = source[i:i+seq_len, 0:args.ngram_size]
-    target = source[i+1:i+1+seq_len, args.ngram_size-1:args.ngram_size]
+    data = source[i:i+seq_len, 0:args.ngram_size] # first 7
+    target = source[i+1:i+1+seq_len, args.ngram_size-1:args.ngram_size] # last 1
     target = target.narrow(1,0,1).contiguous().view(-1)
     return data, target
 
@@ -228,7 +219,7 @@ try:
             best_perplexity = perplexity
         else:
             # Anneal the learning rate if no improvement has been seen in the validation dataset.
-            lr /= 4.0
+            lr /= 2.0
             
 except KeyboardInterrupt:
     print('-' * 89)
@@ -296,7 +287,7 @@ try:
             best_perplexity = perplexity
         else:
             # Anneal the learning rate if no improvement has been seen in the validation dataset.
-            lr /= 4.0
+            lr /= 2.0
             
 except KeyboardInterrupt:
     print('-' * 89)
