@@ -197,6 +197,10 @@ lr = args.lr
 best_val_loss = None
 best_perplexity = 999999999999999
 
+#Empty arrray to store perplexity & epoch
+perplexity_plot_iii = []
+epoch_plot_iii = []
+
 # At any point you can hit Ctrl + C to break out of training early.
 try:
     for epoch in range(1, args.epochs+1):
@@ -211,6 +215,8 @@ try:
         
         # Save the model if the perplexity is the best seen
         perplexity = math.exp(val_loss)
+        perplexity_plot_iii.append(perplexity)
+        epoch_plot_iii.append(epoch)
         if perplexity < best_perplexity:
             print(perplexity)
             with open(args.save, 'wb') as f:
@@ -267,6 +273,10 @@ lr = args.lr
 best_val_loss = None
 best_perplexity = 999999999999999
 
+#Empty arrray to store perplexity & epoch
+perplexity_plot_vi = []
+epoch_plot_vi = []
+
 # At any point you can hit Ctrl + C to break out of training early.
 try:
     for epoch in range(1, args.epochs+1):
@@ -281,6 +291,8 @@ try:
         
         # Save the model if the perplexity is the best seen
         perplexity = math.exp(val_loss)
+        perplexity_plot_vi.append(perplexity)
+        epoch_plot_vi.append(epoch)
         if perplexity < best_perplexity:
             with open(args.save, 'wb') as f:
                 torch.save(model, f)         
