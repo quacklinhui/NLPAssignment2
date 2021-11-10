@@ -39,7 +39,7 @@ To train the FNN Model with no dropout, one can do so using the Anaconda Prompt.
 
 The model is trained using the following commands.
 ```
-python Q1_main.py --cuda --epochs 6           # Train a LSTM on Wikitext-2 with CUDA
+python Q1_main.py --cuda --epochs 6           # Train the FNN on Wikitext-2 with CUDA
 python generate.py                         # Generate samples from the trained FNN model.
 ```
 
