@@ -1,7 +1,7 @@
 # CZ4045 - NLP Assignment 2
 
 ## File Organization
-`
+```
 .
 ├── build                   # Compiled files (alternatively `dist`)
 ├── docs                    # Documentation files (alternatively `doc`)
@@ -10,4 +10,4 @@
 ├── tools                   # Tools and utilities
 ├── LICENSE
 └── README.md
-`
+```
