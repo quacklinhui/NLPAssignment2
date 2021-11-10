@@ -2,6 +2,68 @@
 
 ## Question One
 
+### Setup
+**1. Set up a conda environment**
+- Create **conda environment** via `conda create --name myenv`
+- Activate the conda environment with `conda activate myenv`
+
+**2. Install the relevant packages to be used in the conda environment**
+- pytorch `conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch` or refer to [Pytorch Official Guide](https://pytorch.org/)
+- matplotlib `conda install -c conda-forge matplotlib`
+
+**3. Run the Python Notebooks**
+- Launch Jupyter Notebook
+- Run the Python Notebook file
+- **FNNModel (with Dropout).ipynb:** Notebook that contains final FNN Model 
+
+**4. Sample Output**
+- The output from the Python Notebook is a model.
+- Model with the best perplexity score is saved in the file `model_dropout.pt`
+
+**5. Run the Anaconda Prompt**
+- Launch Anaconda Prompt
+- Change to directory `Q1`
+- Run **generate.py** file using command line `python generate.py` to generate texts for part (vii) 
+- Generated texts are saved in the text file `generated.txt`
+
+**6. Other folders/files found in the directory**
+- **data:** folder which contains dataset split into 3 text files - train, valid and test
+- **data.py:** Python file that does data preprocessing
+- **old_model.py:** original Python file that contains RNN Model provided in the base code
+- **main.py:** original Python file provided in the base code
+- **model.py:** Python file which contains FNN Model without the use of dropout
+- **Q1_main.py:** Python file which contains code to train FNN Model in model.py
+
+**7. Run FNNModel with no dropout**
+To train the FNN Model with no droupout, one can do so using the Anaconda Prompt. During training, if a keyboard interrupt (Ctrl-C) is received, training is stopped and the current model is evaluated against the test dataset.
+
+The `Q1_main.py` script accepts the following arguments: 
+```
+optional arguments:
+  -h, --help            show this help message and exit
+  --data DATA           location of the data corpus
+  --model MODEL         type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU,
+                        Transformer)
+  --emsize EMSIZE       size of word embeddings
+  --nhid NHID           number of hidden units per layer
+  --nlayers NLAYERS     number of layers
+  --lr LR               initial learning rate
+  --clip CLIP           gradient clipping
+  --epochs EPOCHS       upper epoch limit
+  --batch_size N        batch size
+  --ngram_size          size of ngram
+  --dropout DROPOUT     dropout applied to layers (0 = no dropout)
+  --tied                tie the word embedding and softmax weights
+  --seed SEED           random seed
+  --cuda                use CUDA
+  --log-interval N      report interval
+  --save SAVE           path to save the final model
+  --onnx-export ONNX_EXPORT
+                        path to export the final model in onnx format
+  --nhead NHEAD         the number of heads in the encoder/decoder of the
+                        transformer model
+```
+
 ## Question Two
 
 ### Setup
@@ -34,6 +96,18 @@
 ## File Organization
 ```
 ├── Q1
+    ├── FNNModel (with dropout).ipynb                       # Final FNN Model 
+    ├── data.py                                             # Data Preprocessing 
+    ├── old_model.py                                        # Original RNN Model
+    ├── main.py                                             # Original Python file that runs original RNN Model
+    ├── model.py                                            # FNN Model with no Dropout
+    ├── Q1_main.py                                          # Python file that runs FNN Model with no dropout
+    ├── data    
+    |   ├── wikitext-2
+    |       ├── train.txt
+    |       ├── valid.txt
+    |       └── test.txt
+    └── dropout_model.pt                                    # Generated FNN Model
 ├── Q2
     ├── 1CNNLayer.ipynb                                     # 1-layered CNN for part (iv)
     ├── 1CNNLayer_with_Conv2d_Maxpool.ipynb                 # 1-layered CNN (maxpool) for part (iv)
@@ -59,7 +133,7 @@
         ├── 4-layer-CNN-model                               # 4-layered CNN model
         ├── 5-layer-CNN-model                               # 5-layered CNN model
         ├── 5-layer-CNN-model-kernel                        # 5-layered CNN model with different kernel size
-        ├── pre-trained-model                               # Pre-trained model for biLSTM by the original repository
-        └── self-trained-model                              # Self-trained model for biLSTM
+        ├── pre-trained-model                               # Pre-trained model for biLSTM
+        └── self-trained-model
 └── README.md
 ```
