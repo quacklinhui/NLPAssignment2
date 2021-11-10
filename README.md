@@ -59,7 +59,7 @@
         ├── 4-layer-CNN-model                               # 4-layered CNN model
         ├── 5-layer-CNN-model                               # 5-layered CNN model
         ├── 5-layer-CNN-model-kernel                        # 5-layered CNN model with different kernel size
-        ├── pre-trained-model                               # Pre-trained model for biLSTM
-        └── self-trained-model
+        ├── pre-trained-model                               # Pre-trained model for biLSTM by the original repository
+        └── self-trained-model                              # Self-trained model for biLSTM
 └── README.md
 ```
