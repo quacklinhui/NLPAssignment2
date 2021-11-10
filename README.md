@@ -113,7 +113,7 @@ optional arguments:
     |       ├── train.txt
     |       ├── valid.txt
     |       └── test.txt
-    └── dropout_model.pt                                    # Generated FNN Model
+    └── model_dropout.pt                                    # Generated FNN Model
 ├── Q2
     ├── 1CNNLayer.ipynb                                     # 1-layered CNN for part (iv)
     ├── 1CNNLayer_with_Conv2d_Maxpool.ipynb                 # 1-layered CNN (maxpool) for part (iv)
