@@ -34,8 +34,14 @@
 - **model.py:** Python file which contains FNN Model without the use of dropout
 - **Q1_main.py:** Python file which contains code to train FNN Model in model.py
 
-**7. Run FNNModel with no dropout**
+### Running FNN Model with no dropout
 To train the FNN Model with no droupout, one can do so using the Anaconda Prompt. During training, if a keyboard interrupt (Ctrl-C) is received, training is stopped and the current model is evaluated against the test dataset.
+
+The model is trained using the following commands.
+```
+python Q1_main.py --cuda --epochs 6           # Train a LSTM on Wikitext-2 with CUDA
+python generate.py                         # Generate samples from the trained FNN model.
+```
 
 The `Q1_main.py` script accepts the following arguments: 
 ```
