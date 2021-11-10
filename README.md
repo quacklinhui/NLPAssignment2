@@ -27,6 +27,9 @@
 - **5CNNLayer Different Kernel.ipynb:** Experimented 5CNN with a different kernel size
 
 **5. Sample Output**
+- The output from running each file is a model
+- Model name is found in `parameters['name']`
+- The model will be saved in the `./models` folder
 
 ## File Organization
 ```
