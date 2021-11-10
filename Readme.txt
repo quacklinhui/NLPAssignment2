@@ -102,8 +102,10 @@ optional arguments:
 ## File Organization
 ```
 ├── Q1
-    ├── FNNModel (with dropout).ipynb                       # Final FNN Model 
+    ├── FNNModel (with Dropout).ipynb                       # Final FNN Model 
     ├── data.py                                             # Data Preprocessing 
+    ├── generate.py                                         # Program to generate sentences with model
+    ├── generated.txt                                       # Sample sentences generated with our FNN with Dropout model
     ├── old_model.py                                        # Original RNN Model
     ├── main.py                                             # Original Python file that runs original RNN Model
     ├── model.py                                            # FNN Model with no Dropout
@@ -139,7 +141,7 @@ optional arguments:
         ├── 4-layer-CNN-model                               # 4-layered CNN model
         ├── 5-layer-CNN-model                               # 5-layered CNN model
         ├── 5-layer-CNN-model-kernel                        # 5-layered CNN model with different kernel size
-        ├── pre-trained-model                               # Pre-trained model for biLSTM
-        └── self-trained-model
+        ├── pre-trained-model                               # Pre-trained model for biLSTM by the original repository
+        └── self-trained-model                              # Self-trained model for biLSTM
 └── README.md
 ```
