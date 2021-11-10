@@ -35,31 +35,31 @@
 ```
 ├── Q1
 ├── Q2
-    ├── 1CNNLayer.ipynb
-    ├── 1CNNLayer_with_Conv2d_Maxpool.ipynb
-    ├── 1CNNLayer_with_Conv2d_no_maxpool.ipynb
-    ├── 2CNNLayer.ipynb
-    ├── 3CNNLayer.ipynb
-    ├── 4CNNLayer.ipynb
-    ├── 5CNNLayer Different Kernel.ipynb
-    ├── 5CNNLayer.ipynb
-    ├── LSTM.ipynb
+    ├── 1CNNLayer.ipynb                                     # 1-layered CNN for part (iv)
+    ├── 1CNNLayer_with_Conv2d_Maxpool.ipynb                 # 1-layered CNN (maxpool) for part (iv)
+    ├── 1CNNLayer_with_Conv2d_no_maxpool.ipynb              # 1-layered CNN (no maxpool) for part (iv)
+    ├── 2CNNLayer.ipynb                                     # 2-layered CNN for part (vi)
+    ├── 3CNNLayer.ipynb                                     # 3-layered CNN for part (vi)
+    ├── 4CNNLayer.ipynb                                     # 4-layered CNN for part (vi)
+    ├── 5CNNLayer Different Kernel.ipynb                    # 5-layered CNN with different kernel size
+    ├── 5CNNLayer.ipynb                                     # 5-layered CNN for part (vi)
+    ├── LSTM.ipynb                                          # Sample code for biLSTM given in assignment
     ├── data
     |   ├── eng.testa
     |   ├── eng.testb
     |   ├── eng.train
     |   ├── eng.train54019
     |   └── mapping.pkl
-    └── models
-        ├── 1-layer-CNN-model
-        ├── 1-layer-CNN-model-conv2d
-        ├── 1-layer-CNN-model-conv2d-maxpool
-        ├── 2-layer-CNN-model
-        ├── 3-layer-CNN-model
-        ├── 4-layer-CNN-model
-        ├── 5-layer-CNN-model
-        ├── 5-layer-CNN-model-kernel
-        ├── pre-trained-model
+    └── models                                              # Models output from running python notebooks
+        ├── 1-layer-CNN-model                               # 1-layered CNN model
+        ├── 1-layer-CNN-model-conv2d                        # 1-layered CNN model (Conv2d)
+        ├── 1-layer-CNN-model-conv2d-maxpool                # 1-layered CNN model (Conv2d with max pooling)
+        ├── 2-layer-CNN-model                               # 2-layered CNN model
+        ├── 3-layer-CNN-model                               # 3-layered CNN model
+        ├── 4-layer-CNN-model                               # 4-layered CNN model
+        ├── 5-layer-CNN-model                               # 5-layered CNN model
+        ├── 5-layer-CNN-model-kernel                        # 5-layered CNN model with different kernel size
+        ├── pre-trained-model                               # Pre-trained model for biLSTM
         └── self-trained-model
 └── README.md
 ```
