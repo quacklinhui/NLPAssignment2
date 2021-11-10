@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
-
 
 ###############################################################################
 # Language Modeling on Wikitext-2
@@ -38,6 +36,13 @@ parser.add_argument('--log-interval', type=int, default=100,
                     help='reporting interval')
 args = parser.parse_args()
 
+# used to append new word and remove the first word, creating a new set of 7 words
+def modify_input(input, new_word):
+    length = len(input[0])
+    result = torch.cat([input.squeeze()[1:], new_word.view(-1)])
+    result = result.view(1, length)
+    return result
+
 # Set the random seed manually for reproducibility.
 torch.manual_seed(args.seed)
 if torch.cuda.is_available():
@@ -50,31 +55,21 @@ if args.temperature < 1e-3:
     parser.error("--temperature has to be greater or equal 1e-3")
 
 with open(args.checkpoint, 'rb') as f:
-    model = torch.load(f).to(device)
+    model = torch.load(f, map_location=device).to(device)
 model.eval()
 
 corpus = data.Corpus(args.data)
 ntokens = len(corpus.dictionary)
 
-is_transformer_model = hasattr(model, 'model_type') and model.model_type == 'Transformer'
-if not is_transformer_model:
-    hidden = model.init_hidden(1)
-input = torch.randint(ntokens, (1, 1), dtype=torch.long).to(device)
+input = torch.randint(ntokens, (1, 7), dtype=torch.long).to(device)
 
-with open(args.outf, 'w') as outf:
+with open(args.outf, 'w', encoding='utf-8') as outf:
     with torch.no_grad():  # no tracking history
         for i in range(args.words):
-            if is_transformer_model:
-                output = model(input, False)
-                word_weights = output[-1].squeeze().div(args.temperature).exp().cpu()
-                word_idx = torch.multinomial(word_weights, 1)[0]
-                word_tensor = torch.Tensor([[word_idx]]).long().to(device)
-                input = torch.cat([input, word_tensor], 0)
-            else:
-                output, hidden = model(input, hidden)
-                word_weights = output.squeeze().div(args.temperature).exp().cpu()
-                word_idx = torch.multinomial(word_weights, 1)[0]
-                input.fill_(word_idx)
+            output = model(input)
+            word_weights = output.squeeze().div(args.temperature).exp().cpu()
+            word_idx = torch.multinomial(word_weights, 1)[0]
+            input = modify_input(input, word_idx)
 
             word = corpus.dictionary.idx2word[word_idx]
 
