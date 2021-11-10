@@ -34,8 +34,8 @@
 - **model.py:** Python file which contains FNN Model without the use of dropout
 - **Q1_main.py:** Python file which contains code to train FNN Model in model.py
 
-### Running FNN Model with no dropout
-To train the FNN Model with no droupout, one can do so using the Anaconda Prompt. During training, if a keyboard interrupt (Ctrl-C) is received, training is stopped and the current model is evaluated against the test dataset.
+#### Running FNN Model with no dropout
+To train the FNN Model with no dropout, one can do so using the Anaconda Prompt. During training, if a keyboard interrupt (Ctrl-C) is received, training is stopped and the current model is evaluated against the test dataset.
 
 The model is trained using the following commands.
 ```
